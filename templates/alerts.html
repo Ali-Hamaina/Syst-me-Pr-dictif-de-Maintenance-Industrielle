@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Alerts - Predictive Maintenance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .alert-high {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .alert-medium {
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+        }
+        .alert-badge {
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Predictive Maintenance</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/predictions">Predictions History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/alerts">Alerts</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2>Maintenance Alerts</h2>
+        <p class="text-muted">Historical record of all maintenance alerts</p>
+        
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                Alert History
+            </div>
+            <div class="card-body p-0">
+                <div id="alertsContainer" class="list-group">
+                    {% if alerts %}
+                        {% for alert in alerts %}
+                        <div class="list-group-item alert-{{ alert.severity }}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">
+                                    Machine #{{ alert.machine_id }}
+                                    {% if alert.severity == 'high' %}
+                                        <span class="badge bg-danger alert-badge">High Priority</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark alert-badge">Medium Priority</span>
+                                    {% endif %}
+                                </h5>
+                                <small>{{ alert.timestamp }}</small>
+                            </div>
+                            <p class="mb-1">{{ alert.message }}</p>
+                            {% if alert.data %}
+                            <small>
+                                <strong>Sensor readings:</strong> 
+                                Voltage: {{ alert.data.volt }}, 
+                                Rotation: {{ alert.data.rotate }}, 
+                                Pressure: {{ alert.data.pressure }}, 
+                                Vibration: {{ alert.data.vibration }}
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item">No alerts recorded</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Connect to Socket.IO server
+        const socket = io();
+        
+        // Handle new alerts
+        socket.on('new_alert', function(alert) {
+            const alertsContainer = document.getElementById('alertsContainer');
+            
+            // Create new alert element
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `list-group-item alert-${alert.severity}`;
+            
+            // Create header with machine ID and timestamp
+            const header = document.createElement('div');
+            header.className = 'd-flex w-100 justify-content-between';
+            
+            const title = document.createElement('h5');
+            title.className = 'mb-1';
+            title.innerHTML = `Machine #${alert.machine_id} `;
+            
+            // Add priority badge
+            const badge = document.createElement('span');
+            if (alert.severity === 'high') {
+                badge.className = 'badge bg-danger alert-badge';
+                badge.textContent = 'High Priority';
+            } else {
+                badge.className = 'badge bg-warning text-dark alert-badge';
+                badge.textContent = 'Medium Priority';
+            }
+            title.appendChild(badge);
+            
+            const time = document.createElement('small');
+            time.textContent = alert.timestamp;
+            
+            header.appendChild(title);
+            header.appendChild(time);
+            
+            // Add message
+            const message = document.createElement('p');
+            message.className = 'mb-1';
+            message.textContent = alert.message;
+            
+            // Add sensor readings
+            const details = document.createElement('small');
+            if (alert.data) {
+                details.innerHTML = `<strong>Sensor readings:</strong> 
+                    Voltage: ${alert.data.volt}, 
+                    Rotation: ${alert.data.rotate}, 
+                    Pressure: ${alert.data.pressure}, 
+                    Vibration: ${alert.data.vibration}`;
+            }
+            
+            // Add elements to alert div
+            alertDiv.appendChild(header);
+            alertDiv.appendChild(message);
+            alertDiv.appendChild(details);
+            
+            // Add to container at the beginning
+            const noAlerts = alertsContainer.querySelector('.list-group-item');
+            if (noAlerts && noAlerts.textContent === 'No alerts recorded') {
+                alertsContainer.innerHTML = '';
+            }
+            
+            alertsContainer.prepend(alertDiv);
+        });
+    </script>
+</body>
+</html>
