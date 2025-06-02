@@ -47,7 +47,7 @@ The Predictive Maintenance Dashboard monitors machine health metrics in real-tim
 - Python 3.7+
 - Apache Kafka
 - MongoDB
-- Git
+
 
 ### Installation Steps
 
