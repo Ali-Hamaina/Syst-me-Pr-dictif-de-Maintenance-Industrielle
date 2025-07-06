@@ -8,3 +8,6 @@ pyspark
 kafka-python
 pymongo
 requests
+python-socketio
+eventlet
+python-engineio

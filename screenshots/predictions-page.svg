@@ -1,0 +1,55 @@
+<!-- Placeholder for predictions page screenshot -->
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+  <text x="400" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#495057">
+    Prédictions Machine Learning
+  </text>
+  
+  <!-- Header Section -->
+  <rect x="50" y="80" width="700" height="60" fill="#17a2b8" rx="8"/>
+  <text x="400" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="white">
+    Historique des Prédictions IA - Maintenance Prédictive
+  </text>
+  
+  <!-- Prediction Cards -->
+  <rect x="50" y="160" width="700" height="60" fill="#dc3545" rx="8"/>
+  <text x="70" y="180" font-family="Arial, sans-serif" font-size="16" fill="white">DÉFAILLANCE PROBABLE</text>
+  <text x="70" y="200" font-family="Arial, sans-serif" font-size="14" fill="white">Machine ID-001: Probabilité 85.3% | Modèle: Régression Logistique</text>
+  <text x="600" y="185" font-family="Arial, sans-serif" font-size="20" fill="white">85.3%</text>
+  <text x="650" y="205" font-family="Arial, sans-serif" font-size="12" fill="white">14:25:30</text>
+  
+  <rect x="50" y="230" width="700" height="60" fill="#ffc107" rx="8"/>
+  <text x="70" y="250" font-family="Arial, sans-serif" font-size="16" fill="white">SURVEILLANCE</text>
+  <text x="70" y="270" font-family="Arial, sans-serif" font-size="14" fill="white">Machine ID-003: Probabilité 67.8% | Modèle: Random Forest</text>
+  <text x="600" y="255" font-family="Arial, sans-serif" font-size="20" fill="white">67.8%</text>
+  <text x="650" y="275" font-family="Arial, sans-serif" font-size="12" fill="white">14:20:15</text>
+  
+  <rect x="50" y="300" width="700" height="60" fill="#28a745" rx="8"/>
+  <text x="70" y="320" font-family="Arial, sans-serif" font-size="16" fill="white">ÉTAT NORMAL</text>
+  <text x="70" y="340" font-family="Arial, sans-serif" font-size="14" fill="white">Machine ID-002: Probabilité 23.1% | Modèle: Régression Logistique</text>
+  <text x="600" y="325" font-family="Arial, sans-serif" font-size="20" fill="white">23.1%</text>
+  <text x="650" y="345" font-family="Arial, sans-serif" font-size="12" fill="white">14:15:45</text>
+  
+  <rect x="50" y="370" width="700" height="60" fill="#28a745" rx="8"/>
+  <text x="70" y="390" font-family="Arial, sans-serif" font-size="16" fill="white">ÉTAT NORMAL</text>
+  <text x="70" y="410" font-family="Arial, sans-serif" font-size="14" fill="white">Machine ID-005: Probabilité 15.7% | Modèle: Random Forest</text>
+  <text x="600" y="395" font-family="Arial, sans-serif" font-size="20" fill="white">15.7%</text>
+  <text x="650" y="415" font-family="Arial, sans-serif" font-size="12" fill="white">14:10:20</text>
+  
+  <!-- Chart Section -->
+  <rect x="50" y="450" width="340" height="100" fill="white" stroke="#dee2e6" stroke-width="1" rx="8"/>
+  <text x="220" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#495057">
+    Précision du Modèle
+  </text>
+  <text x="220" y="520" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#28a745">
+    87.3%
+  </text>
+  
+  <rect x="410" y="450" width="340" height="100" fill="white" stroke="#dee2e6" stroke-width="1" rx="8"/>
+  <text x="580" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#495057">
+    Prédictions Aujourd'hui
+  </text>
+  <text x="580" y="520" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#17a2b8">
+    142
+  </text>
+</svg>

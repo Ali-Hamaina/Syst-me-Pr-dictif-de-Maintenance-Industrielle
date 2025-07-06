@@ -3,187 +3,327 @@ from flask_socketio import SocketIO
 import json
 from datetime import datetime
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 import pickle
 import os
 import pandas as pd
 import numpy as np
+from pymongo import MongoClient
+import logging
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'maintenance_dashboard_secret'
+app.config['SECRET_KEY'] = 'refrigeration_maintenance_dashboard_secret'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# In-memory storage for predictions and alerts
+# Configuration MongoDB
+try:
+    # Try to connect to MongoDB (Docker or local)
+    try:
+        # First try with Docker MongoDB (with auth)
+        client = MongoClient("mongodb://admin:password@localhost:27017/")
+        client.admin.command('ping')  # Test connection
+        db = client["refrigeration_maintenance"]
+    except:
+        # Fallback to local MongoDB (without auth)
+        client = MongoClient("mongodb://localhost:27017/")
+        client.admin.command('ping')  # Test connection
+        db = client["refrigeration_maintenance"]
+    
+    predictions_collection = db["predictions"]
+    alerts_collection = db["alerts"]
+    sensors_collection = db["sensors_data"]
+    logger.info("✅ Connexion MongoDB établie")
+except Exception as e:
+    logger.warning(f"⚠️ MongoDB non disponible: {e}")
+    logger.info("📝 Utilisation du stockage en mémoire")
+    # Fallback sur stockage en mémoire
+    predictions_collection = None
+    alerts_collection = None
+    sensors_collection = None
+
+# Stockage en mémoire comme backup
 predictions = []
 alerts = []
+sensors_data = []
 
-# Load the model or create a new one using LogisticRegression
+# Chargement du modèle pour installations frigorifiques
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "model_logistic.pkl")
+MODEL_PATH = os.path.join(BASE_DIR, "model_logistic_refrigeration.pkl")
 
 if os.path.exists(MODEL_PATH):
     with open(MODEL_PATH, "rb") as f:
         model = pickle.load(f)
-    print("✅ LogisticRegression model loaded successfully")
+    logger.info("✅ Modèle installations frigorifiques chargé avec succès")
 else:
-    # Create a simple LogisticRegression model
+    # Créer un modèle pour installations frigorifiques
+    logger.info("🔧 Création d'un nouveau modèle pour installations frigorifiques...")
     data = pd.DataFrame({
-        "volt": [10.5, 11.0, 12.3, 9.8],
-        "rotate": [1000, 1050, 980, 990],
-        "pressure": [30.5, 32.0, 31.0, 29.8],
-        "vibration": [0.02, 0.03, 0.025, 0.015],
-        "status": [0, 1, 0, 1]  # 0 = OK, 1 = failure
+        "temp_evaporator": [-10.5, -8.0, -12.3, -15.8, -7.2, -11.0, -9.5, -13.1],
+        "temp_condenser": [40.5, 38.0, 45.3, 42.8, 39.2, 44.0, 41.5, 46.1],
+        "pressure_high": [12.5, 11.8, 14.2, 13.1, 12.0, 13.8, 12.7, 14.5],
+        "pressure_low": [2.1, 2.3, 1.8, 1.9, 2.4, 1.7, 2.2, 1.6],
+        "superheat": [8.5, 9.2, 7.8, 6.9, 9.8, 7.2, 8.9, 6.5],
+        "subcooling": [5.2, 4.8, 6.1, 5.7, 4.5, 6.3, 5.0, 6.8],
+        "compressor_current": [8.2, 7.9, 9.5, 8.8, 7.6, 9.2, 8.5, 9.8],
+        "vibration": [0.02, 0.03, 0.025, 0.015, 0.035, 0.018, 0.028, 0.042],
+        "status": [0, 0, 1, 1, 0, 1, 0, 1]
     })
     
-    X = data[["volt", "rotate", "pressure", "vibration"]]
+    X = data[["temp_evaporator", "temp_condenser", "pressure_high", "pressure_low", 
+              "superheat", "subcooling", "compressor_current", "vibration"]]
     y = data["status"]
     
-    # Train LogisticRegression model
-    model = LogisticRegression(random_state=42)
+    model = LogisticRegression(random_state=42, max_iter=1000)
     model.fit(X, y)
     
-    # Save the model
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(model, f)
-    print("✅ New LogisticRegression model trained and saved")
+    logger.info("✅ Nouveau modèle installations frigorifiques créé et sauvegardé")
+
+def get_predictions_from_db(limit=50):
+    """Récupère les prédictions depuis MongoDB ou mémoire"""
+    if predictions_collection is not None:
+        try:
+            return list(predictions_collection.find().sort("timestamp", -1).limit(limit))
+        except:
+            pass
+    return predictions[-limit:] if predictions else []
+
+def get_alerts_from_db(limit=50):
+    """Récupère les alertes depuis MongoDB ou mémoire"""
+    if alerts_collection is not None:
+        try:
+            return list(alerts_collection.find().sort("timestamp", -1).limit(limit))
+        except:
+            pass
+    return alerts[-limit:] if alerts else []
 
 @app.route('/')
 def index():
-    return render_template('dashboard.html', predictions=predictions[-10:], alerts=alerts[-10:])
+    recent_predictions = get_predictions_from_db(10)
+    recent_alerts = get_alerts_from_db(10)
+    return render_template('dashboard.html', 
+                         predictions=recent_predictions, 
+                         alerts=recent_alerts)
 
 @app.route('/predictions')
 def view_predictions():
-    return render_template('predictions.html', predictions=predictions[-50:])
+    all_predictions = get_predictions_from_db(100)
+    return render_template('predictions.html', predictions=all_predictions)
 
 @app.route('/alerts')
 def view_alerts():
-    return render_template('alerts.html', alerts=alerts)
+    all_alerts = get_alerts_from_db(100)
+    return render_template('alerts.html', alerts=all_alerts)
 
-@app.route('/api/prediction', methods=['POST'])
-def receive_prediction():
-    """Receive prediction data from the streaming application"""
+@app.route('/api/refrigeration_prediction', methods=['POST'])
+def receive_refrigeration_prediction():
+    """Reçoit les données de prédiction pour installations frigorifiques"""
     try:
         data = request.json
         
-        # Make prediction with LogisticRegression model
+        # Prédiction avec le modèle installations frigorifiques
         features = np.array([[
-            data['volt'],
-            data['rotate'],
-            data['pressure'], 
+            data['temp_evaporator'],
+            data['temp_condenser'],
+            data['pressure_high'],
+            data['pressure_low'],
+            data['superheat'],
+            data['subcooling'],
+            data['compressor_current'],
             data['vibration']
         ]])
         
         prediction = int(model.predict(features)[0])
         probability = float(model.predict_proba(features)[0][1])
         
-        # Add prediction result to the data
+        # Ajout des résultats de prédiction
         data['prediction'] = prediction
         data['probability'] = probability
         data['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Store prediction
+        # Stockage dans MongoDB
+        if predictions_collection is not None:
+            try:
+                predictions_collection.insert_one(data.copy())
+            except Exception as e:
+                logger.error(f"Erreur insertion MongoDB: {e}")
+        
+        # Stockage en mémoire
         predictions.append(data)
-        if len(predictions) > 100:  # Keep only last 100 predictions
+        if len(predictions) > 200:
             predictions.pop(0)
-            
-        # Real-time update to dashboard
+        
+        # Stockage des données capteurs
+        if sensors_collection is not None:
+            try:
+                sensors_collection.insert_one(data.copy())
+            except:
+                pass
+        
+        # Mise à jour temps réel dashboard
         socketio.emit('new_prediction', data)
         
-        # Check for alert conditions
+        # Vérification des conditions d'alerte spécifiques aux installations frigorifiques
         alerts_to_add = []
         
-        # Alert condition 1: Based on prediction probability
+        # Alerte 1: Prédiction de défaillance
         if prediction == 1:
             alerts_to_add.append({
                 'timestamp': data['timestamp'],
                 'machine_id': data['machine_id'],
-                'message': f"⚠️ Maintenance needed for machine {data['machine_id']} - Failure probability: {probability:.2%}",
+                'message': f"⚠️ Maintenance préventive requise - Installation frigorifique {data['machine_id']} - Probabilité: {probability:.1%}",
                 'severity': 'high' if probability > 0.75 else 'medium',
                 'type': 'prediction',
                 'data': data
             })
         
-        # Alert condition 2: Critical voltage levels
-        if data['volt'] < 9.5:
+        # Alerte 2: Températures critiques
+        if data['temp_evaporator'] > -5:
             alerts_to_add.append({
                 'timestamp': data['timestamp'],
                 'machine_id': data['machine_id'],
-                'message': f"⚡ Low voltage detected on machine {data['machine_id']} - Current: {data['volt']}V",
+                'message': f"🌡️ Température évaporateur élevée: {data['temp_evaporator']}°C - Risque de perte de capacité frigorifique",
                 'severity': 'high',
-                'type': 'voltage',
-                'data': data
-            })
-        elif data['volt'] > 12.5:
-            alerts_to_add.append({
-                'timestamp': data['timestamp'],
-                'machine_id': data['machine_id'],
-                'message': f"⚡ High voltage detected on machine {data['machine_id']} - Current: {data['volt']}V",
-                'severity': 'medium',
-                'type': 'voltage',
-                'data': data
-            })
-            
-        # Alert condition 3: Abnormal vibration
-        if data['vibration'] > 0.04:
-            alerts_to_add.append({
-                'timestamp': data['timestamp'],
-                'machine_id': data['machine_id'],
-                'message': f"📳 Excessive vibration on machine {data['machine_id']} - Current: {data['vibration']}",
-                'severity': 'high',
-                'type': 'vibration',
-                'data': data
-            })
-            
-        # Alert condition 4: Pressure issues
-        if data['pressure'] < 28.0:
-            alerts_to_add.append({
-                'timestamp': data['timestamp'],
-                'machine_id': data['machine_id'],
-                'message': f"📉 Low pressure on machine {data['machine_id']} - Current: {data['pressure']} PSI",
-                'severity': 'medium',
-                'type': 'pressure',
-                'data': data
-            })
-        elif data['pressure'] > 34.0:
-            alerts_to_add.append({
-                'timestamp': data['timestamp'],
-                'machine_id': data['machine_id'],
-                'message': f"📈 High pressure on machine {data['machine_id']} - Current: {data['pressure']} PSI",
-                'severity': 'medium',
-                'type': 'pressure',
-                'data': data
-            })
-            
-        # Alert condition 5: Rotation speed issues
-        if data['rotate'] < 950:
-            alerts_to_add.append({
-                'timestamp': data['timestamp'],
-                'machine_id': data['machine_id'],
-                'message': f"🔄 Low rotation speed on machine {data['machine_id']} - Current: {data['rotate']} RPM",
-                'severity': 'medium',
-                'type': 'rotation',
-                'data': data
-            })
-        elif data['rotate'] > 1100:
-            alerts_to_add.append({
-                'timestamp': data['timestamp'],
-                'machine_id': data['machine_id'],
-                'message': f"🔄 High rotation speed on machine {data['machine_id']} - Current: {data['rotate']} RPM",
-                'severity': 'medium',
-                'type': 'rotation',
+                'type': 'temperature',
                 'data': data
             })
         
-        # Add all generated alerts to the alerts list
+        if data['temp_condenser'] > 50:
+            alerts_to_add.append({
+                'timestamp': data['timestamp'],
+                'machine_id': data['machine_id'],
+                'message': f"🌡️ Température condenseur critique: {data['temp_condenser']}°C - Risque de surchauffe",
+                'severity': 'high',
+                'type': 'temperature',
+                'data': data
+            })
+        
+        # Alerte 3: Pressions anormales
+        if data['pressure_high'] > 16:
+            alerts_to_add.append({
+                'timestamp': data['timestamp'],
+                'machine_id': data['machine_id'],
+                'message': f"📈 Pression haute critique: {data['pressure_high']} bar - Risque de déclenchement des sécurités",
+                'severity': 'high',
+                'type': 'pressure',
+                'data': data
+            })
+        
+        if data['pressure_low'] < 1.5:
+            alerts_to_add.append({
+                'timestamp': data['timestamp'],
+                'machine_id': data['machine_id'],
+                'message': f"📉 Pression basse critique: {data['pressure_low']} bar - Risque de perte de fluide frigorigène",
+                'severity': 'high',
+                'type': 'pressure',
+                'data': data
+            })
+        
+        # Alerte 4: Surchauffe et sous-refroidissement
+        if data['superheat'] < 3:
+            alerts_to_add.append({
+                'timestamp': data['timestamp'],
+                'machine_id': data['machine_id'],
+                'message': f"❄️ Surchauffe faible: {data['superheat']}°C - Risque de retour liquide compresseur",
+                'severity': 'high',
+                'type': 'superheat',
+                'data': data
+            })
+        
+        if data['superheat'] > 15:
+            alerts_to_add.append({
+                'timestamp': data['timestamp'],
+                'machine_id': data['machine_id'],
+                'message': f"🔥 Surchauffe excessive: {data['superheat']}°C - Perte d'efficacité énergétique",
+                'severity': 'medium',
+                'type': 'superheat',
+                'data': data
+            })
+        
+        # Alerte 5: Courant compresseur
+        if data['compressor_current'] > 12:
+            alerts_to_add.append({
+                'timestamp': data['timestamp'],
+                'machine_id': data['machine_id'],
+                'message': f"⚡ Courant compresseur élevé: {data['compressor_current']}A - Surcharge détectée",
+                'severity': 'high',
+                'type': 'current',
+                'data': data
+            })
+        
+        # Alerte 6: Vibrations
+        if data['vibration'] > 0.05:
+            alerts_to_add.append({
+                'timestamp': data['timestamp'],
+                'machine_id': data['machine_id'],
+                'message': f"📳 Vibrations excessives: {data['vibration']}g - Vérifier fixations et paliers",
+                'severity': 'medium',
+                'type': 'vibration',
+                'data': data
+            })
+        
+        # Alerte 7: Ratio de pression
+        pressure_ratio = data['pressure_high'] / data['pressure_low']
+        if pressure_ratio > 8:
+            alerts_to_add.append({
+                'timestamp': data['timestamp'],
+                'machine_id': data['machine_id'],
+                'message': f"⚖️ Ratio de pression élevé: {pressure_ratio:.1f} - Efficacité réduite",
+                'severity': 'medium',
+                'type': 'pressure_ratio',
+                'data': data
+            })
+        
+        # Traitement des alertes
         for alert in alerts_to_add:
-            alerts.append(alert)
-            socketio.emit('new_alert', alert)
+            # Stockage MongoDB
+            if alerts_collection is not None:
+                try:
+                    alerts_collection.insert_one(alert.copy())
+                except Exception as e:
+                    logger.error(f"Erreur insertion alerte MongoDB: {e}")
             
-        return jsonify({"status": "success", "prediction": prediction})
+            # Stockage mémoire
+            alerts.append(alert)
+            if len(alerts) > 100:
+                alerts.pop(0)
+            
+            # Émission temps réel
+            socketio.emit('new_alert', alert)
+        
+        return jsonify({
+            "status": "success", 
+            "prediction": prediction,
+            "probability": probability,
+            "alerts_generated": len(alerts_to_add)
+        })
+        
     except Exception as e:
+        logger.error(f"Erreur traitement prédiction: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/system_status')
+def system_status():
+    """Retourne le statut du système"""
+    return jsonify({
+        "status": "running",
+        "model_loaded": MODEL_PATH,
+        "mongodb_connected": predictions_collection is not None,
+        "predictions_count": len(predictions),
+        "alerts_count": len(alerts)
+    })
+
 if __name__ == '__main__':
-    # Create templates directory if it doesn't exist
+    # Création des dossiers nécessaires
     os.makedirs(os.path.join(BASE_DIR, "templates"), exist_ok=True)
     os.makedirs(os.path.join(BASE_DIR, "static"), exist_ok=True)
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    
+    logger.info("🧊 Démarrage dashboard maintenance prédictive installations frigorifiques")
+    logger.info("🌐 http://localhost:5001")
+    
+    socketio.run(app, debug=True, host='0.0.0.0', port=5001)

@@ -1,0 +1,63 @@
+<!-- This is a placeholder for the dashboard screenshot -->
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+  <text x="400" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#495057">
+    Tableau de Bord - Maintenance Prédictive
+  </text>
+  
+  <!-- Header Section -->
+  <rect x="50" y="80" width="700" height="60" fill="#007bff" rx="8"/>
+  <text x="400" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="white">
+    Système de Surveillance des Installations Frigorifiques
+  </text>
+  
+  <!-- Status Cards -->
+  <rect x="50" y="160" width="150" height="100" fill="#28a745" rx="8"/>
+  <text x="125" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="white">Status</text>
+  <text x="125" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="white">NORMAL</text>
+  <text x="125" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">5 Machines</text>
+  
+  <rect x="220" y="160" width="150" height="100" fill="#ffc107" rx="8"/>
+  <text x="295" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="white">Alertes</text>
+  <text x="295" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="white">3</text>
+  <text x="295" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">En cours</text>
+  
+  <rect x="390" y="160" width="150" height="100" fill="#17a2b8" rx="8"/>
+  <text x="465" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="white">Prédictions</text>
+  <text x="465" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="white">87%</text>
+  <text x="465" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Précision</text>
+  
+  <rect x="560" y="160" width="150" height="100" fill="#dc3545" rx="8"/>
+  <text x="635" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="white">Maintenance</text>
+  <text x="635" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="white">2</text>
+  <text x="635" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Requise</text>
+  
+  <!-- Charts Section -->
+  <rect x="50" y="290" width="340" height="200" fill="white" stroke="#dee2e6" stroke-width="1" rx="8"/>
+  <text x="220" y="315" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#495057">
+    Températures en Temps Réel
+  </text>
+  
+  <!-- Simulated chart -->
+  <polyline points="70,450 100,420 130,440 160,400 190,390 220,410 250,380 280,400 310,370 340,390 370,360" 
+            fill="none" stroke="#007bff" stroke-width="2"/>
+  <polyline points="70,400 100,380 130,390 160,350 190,340 220,360 250,330 280,350 310,320 340,340 370,310" 
+            fill="none" stroke="#28a745" stroke-width="2"/>
+  
+  <rect x="410" y="290" width="340" height="200" fill="white" stroke="#dee2e6" stroke-width="1" rx="8"/>
+  <text x="580" y="315" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#495057">
+    Pressions Système
+  </text>
+  
+  <!-- Simulated chart -->
+  <polyline points="430,450 460,430 490,440 520,420 550,410 580,430 610,400 640,420 670,390 700,410 730,380" 
+            fill="none" stroke="#ffc107" stroke-width="2"/>
+  <polyline points="430,420 460,400 490,410 520,390 550,380 580,400 610,370 640,390 670,360 700,380 730,350" 
+            fill="none" stroke="#dc3545" stroke-width="2"/>
+  
+  <!-- Footer -->
+  <rect x="50" y="520" width="700" height="40" fill="#6c757d" rx="8"/>
+  <text x="400" y="545" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="white">
+    Dernière mise à jour: 07/07/2025 - 14:30:15 | 5 machines surveillées | Kafka: ✓ MongoDB: ✓
+  </text>
+</svg>

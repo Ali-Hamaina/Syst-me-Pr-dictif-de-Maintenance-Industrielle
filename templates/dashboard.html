@@ -46,8 +46,8 @@
     </nav>
 
     <div class="container mt-4">
-        <h2>Machine Health Dashboard</h2>
-        <p class="text-muted">Real-time predictive maintenance using Kafka Streaming and LogisticRegression</p>
+        <h2>Dashboard Maintenance Prédictive - Installations Frigorifiques</h2>
+        <p class="text-muted">Surveillance temps réel et analyse thermodynamique avec Kafka et Machine Learning</p>
         
         <div class="row">
             <div class="col-md-8">
@@ -60,29 +60,37 @@
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="card-header bg-info text-white">
-                        <strong>Live Sensor Readings</strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <canvas id="voltageChart" height="200"></canvas>
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <strong>Capteurs Installations Frigorifiques</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <canvas id="tempEvaporatorChart" height="200"></canvas>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="tempCondenserChart" height="200"></canvas>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <canvas id="rotationChart" height="200"></canvas>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <canvas id="pressureHighChart" height="200"></canvas>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="pressureLowChart" height="200"></canvas>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <canvas id="superheatChart" height="200"></canvas>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="subcoolingChart" height="200"></canvas>
+                                </div>
                             </div>
                         </div>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <canvas id="pressureChart" height="200"></canvas>
-                            </div>
-                            <div class="col-md-6">
-                                <canvas id="vibrationChart" height="200"></canvas>
-                            </div>
-                        </div>
                     </div>
-                </div>
             </div>
             
             <div class="col-md-4">
